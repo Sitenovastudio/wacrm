@@ -1,12 +1,14 @@
-# WACRM database migration inventory for InsForge
+> **SUPERSEDED — historical reference only.** The approved SiteNova Connect backend is AWS-native: Cognito, Amazon RDS for PostgreSQL, ECS Fargate, S3, SQS and related services in `ap-south-1`. Do not provision or deploy InsForge for this project. See `AWS_ARCHITECTURE_BLUEPRINT.md` and `AWS_MIGRATION_IMPLEMENTATION_PLAN.md`. No AWS resources have been created; both existing Supabase projects remain untouched.
+
+# WACRM database migration inventory — AWS RDS target
 
 Source: `ArnasDon/wacrm`, `supabase/migrations/`.
-Target: dedicated local self-hosted InsForge instance.
+Target: Amazon RDS for PostgreSQL in `ap-south-1`.
 Status: **reference inventory only — none of these SQL files have been executed or ported yet.**
 
 The source has 58 SQL migrations. Preserve their ordering and review every statement. Some gaps in numbering are intentional in the source repository; do not renumber the source files or infer missing migrations.
 
-| Source migration | Domain / review focus | Target status |
+| Source migration | Domain / review focus | AWS target status |
 |---|---|---|
 | `001_initial_schema.sql` | Profiles, contacts, tags, custom fields, core tables | Not ported |
 | `002_pipelines_enhancements.sql` | Pipeline schema and stages | Not ported |
@@ -71,7 +73,7 @@ The source has 58 SQL migrations. Preserve their ordering and review every state
 
 1. Identify all tables, columns, constraints, indexes, triggers, functions, extensions and storage changes.
 2. Identify every dependency on `auth.users`, `auth.uid()`, JWT claims, Supabase roles, service-role bypass and Supabase Storage internals.
-3. Re-map user identity to InsForge Auth without assuming the internal `auth` schema is exposed through the public data API.
+3. Re-map user identity to AWS Auth without assuming the internal `auth` schema is exposed through the public data API.
 4. Rebuild account/member authorization with explicit tenant checks and least-privilege RLS policies. Test cross-account read/write denial.
 5. Rework storage buckets and policies through InsForge Storage; never assume Supabase bucket APIs or policy tables are compatible.
 6. Validate Postgres extensions and function privileges against the pinned local InsForge image.
