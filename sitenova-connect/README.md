@@ -4,26 +4,29 @@ Vanilla JavaScript SPA and Node.js API migration workspace for WACRM.
 
 ## Current status
 
-This is an additive migration scaffold on `sitenova/vanilla-js-migration`. The original Next.js application, source files, MCP server, Supabase migrations and license remain in place. This scaffold is not yet a feature-complete CRM.
+This is an additive migration scaffold on `sitenova/vanilla-js-migration`. The original Next.js application, source files, MCP server and original Supabase migrations remain in place as read-only migration references. This scaffold is not yet a feature-complete CRM.
 
-See [AUDIT.md](./AUDIT.md) for the initial source-to-feature inventory and parity checklist.
+See [AUDIT.md](./AUDIT.md), [PARITY_TRACKER.md](./docs/PARITY_TRACKER.md), and [INSFORGE_MIGRATION_MAPPING.md](./docs/INSFORGE_MIGRATION_MAPPING.md).
 
 ## Architecture
 
-- `public/`: single-page HTML/CSS/ES-module frontend.
-- `server/`: Express API host and future migrated API modules.
-- Supabase: a separate new project will be configured using environment variables.
-- MCP: original package remains separate until its migration is validated.
+- `public/`: single-page HTML/CSS/Vanilla JavaScript frontend.
+- `server/`: Express API and InsForge adapter.
+- Backend: dedicated self-hosted InsForge instance, with its own PostgreSQL, Auth and Storage.
+- Jobs: separate worker process; durable queue and job handlers are still pending.
+- MCP: original package remains separate until migration is validated.
+
+The two existing managed Supabase projects are not used by this target architecture and must remain untouched.
 
 ## Local setup
 
-1. Install Node.js (use the version supported by the current root project and this package).
-2. Copy `.env.example` to `.env` and fill server-side values.
-3. Run `npm install` in this directory.
-4. Run `npm run dev`.
+1. Follow [INSFORGE_LOCAL_SETUP.md](./docs/INSFORGE_LOCAL_SETUP.md) to run InsForge in its own Docker Compose directory.
+2. Copy `.env.example` to `.env` and map InsForge's `ACCESS_ANON_KEY` to `INSFORGE_ANON_KEY`, and server-only `ACCESS_API_KEY` to `INSFORGE_API_KEY`.
+3. Run `npm install`, `npm run check`, then `npm run dev`.
+4. Open `http://localhost:3000`.
 
-Do not place service-role keys, Meta secrets, encryption keys or AI provider keys in `public/` or client-side JavaScript.
+Never expose the InsForge admin/API key, database password, root admin password, JWT secret, encryption key, Meta secrets or AI provider keys to browser code.
 
 ## Migration policy
 
-Never delete the original implementation until each feature has a passing parity test. Apply database migrations to a disposable new Supabase project before any production setup.
+Do not delete the original implementation until every feature has passing parity tests. Do not run the original SQL migrations against either existing Supabase project. Port and test each migration against the isolated local InsForge instance first.
