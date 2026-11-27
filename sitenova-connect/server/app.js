@@ -5,11 +5,11 @@ import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config.js";
-import { createSupabaseClients } from "./supabase.js";
+import { getInsForgePublicConfig } from "./insforge.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const config = loadConfig();
-const { publicClient, adminClient } = createSupabaseClients(config);
+const insforgePublic = getInsForgePublicConfig(config);
 const app = express();
 
 app.disable("x-powered-by");
@@ -26,14 +26,22 @@ app.get("/api/health", (_req, res) => {
     status: "ok",
     service: "sitenova-connect-api",
     mode: config.nodeEnv,
-    databaseConfigured: Boolean(publicClient && adminClient),
+    insforgeConfigured: Boolean(insforgePublic),
     migration: "scaffold",
   });
 });
 
-// Feature routes must be ported with per-request authentication, account scoping,
-// validation, rate limiting and audit logging before they are mounted here.
-// Keep webhook routes separate so Meta signature checks can use the raw body.
+// Public configuration is limited to non-secret project connection details.
+// Never return INSFORGE_ADMIN_KEY, INSFORGE_DATABASE_URL or platform root secrets.
+app.get("/api/config", (_req, res) => {
+  if (!insforgePublic) return res.status(503).json({ error: "InsForge is not configured" });
+  res.set("Cache-Control", "no-store");
+  res.json({ insforge: insforgePublic });
+});
+
+// Feature routes must be ported with verified sessions, account scoping,
+// validation, rate limits and audit logging before being mounted here.
+// Webhook routes need raw-body signature verification and idempotent ingestion.
 app.use(express.static(path.resolve(__dirname, "../public"), {
   extensions: ["html"],
   maxAge: config.production ? "1h" : 0,
