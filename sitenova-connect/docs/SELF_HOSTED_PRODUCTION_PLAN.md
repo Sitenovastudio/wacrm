@@ -1,35 +1,40 @@
-# SiteNova Connect — Self-Hosted InsForge Architecture
+# SiteNova Connect — AWS Production Plan
 
-## Decision
-Target backend: a dedicated self-hosted InsForge instance. Current developer environment: local Docker. Production hosting is a later phase. Both existing managed Supabase projects are explicitly out of scope and must remain untouched.
+## Approved target
 
-## Architecture
-- Frontend: HTML/CSS/Vanilla JavaScript SPA.
-- Application API: Node.js + Express with validation, authorization, audit trail and webhook endpoints.
-- Backend platform: dedicated InsForge instance with its own PostgreSQL, Auth, Storage and supported realtime/functions.
-- Background processing: separate Node worker with durable queue/outbox, retries and dead-letter handling.
-- Integrations: Meta WhatsApp Cloud API and AI providers through server-side adapters.
-- Files: InsForge Storage; local persistent volume for development, supported S3-compatible backend and off-host backups for production.
+- Region: AWS Asia Pacific (Mumbai), `ap-south-1`.
+- Database: Amazon RDS for PostgreSQL, Multi-AZ for production.
+- Frontend: Vanilla JS SPA hosted in private S3 behind CloudFront + WAF.
+- Identity: Amazon Cognito.
+- Application runtime: Node.js API, webhook and worker services on ECS Fargate.
+- API ingress: API Gateway HTTP API + Cognito JWT authorizer + VPC Link + internal ALB.
+- Files: private S3 buckets with KMS encryption and short-lived presigned URLs.
+- Async processing: SQS/DLQs, EventBridge Scheduler and Step Functions where required.
+- Realtime: API Gateway WebSocket API.
+- Security/operations: IAM task roles, KMS, Secrets Manager, CloudWatch, CloudTrail, X-Ray and ECR.
 
-Browser code receives only public project configuration and authenticated user sessions. InsForge project admin API key, database password, root admin password, JWT secret and encryption key remain server/platform secrets.
+The full design is in [AWS_ARCHITECTURE_BLUEPRINT.md](./AWS_ARCHITECTURE_BLUEPRINT.md). The phased source-to-AWS work plan is in [AWS_MIGRATION_IMPLEMENTATION_PLAN.md](./AWS_MIGRATION_IMPLEMENTATION_PLAN.md).
 
-## Local-first rollout
-1. Run InsForge locally in a dedicated directory using official Docker Compose setup.
-2. Validate Auth, PostgreSQL API, Storage, realtime, health and backup/restore in a disposable environment.
-3. Pin the tested InsForge release/image and @insforge/sdk version.
-4. Port all 58 source WACRM SQL migrations into a separate ordered target migration set; never apply source migrations to either existing managed Supabase project.
-5. Implement tenant isolation and role tests before migrating user data.
-6. Port features in parity-tracker order and acceptance-test against original WACRM behavior.
-7. Only after local acceptance, design production VPS, TLS, domain, firewall, backups, monitoring, SMTP, upgrade/rollback and recovery.
+## Environment strategy
 
-## Isolation guarantee
-- No credentials or endpoints for either existing Supabase project belong in this app configuration.
-- No migration operation should create, alter, pause, delete or move data in those projects.
-- Original WACRM source/upstream repository remains unchanged.
-- Original Supabase migrations remain read-only references until each is reviewed and ported.
+Maintain isolated dev, staging and production environments. Prefer separate AWS accounts under AWS Organizations. Production must use private application/database subnets, RDS Multi-AZ, encrypted backups, deployment approvals, observability, incident runbooks and tested restore/rollback.
 
-## Production hardening
-Do not expose PostgreSQL, PostgREST, Studio/admin UI or internal services directly to the internet. Use TLS reverse proxy, firewall, persistent volumes, encrypted off-host backups, tested restores, log retention, monitoring, SMTP and documented update/rollback. Pin release/image digests; do not deploy production from moving latest tags.
+## Migration requirements
+
+The source WACRM app uses Supabase-specific authentication, database policies, storage, realtime and server-side APIs. The 58 source SQL migrations require individual review and translation; they must not be run unchanged against RDS. Rebuild Cognito identity mapping, PostgreSQL RLS, S3 access, WebSocket events, durable jobs and all application APIs. Preserve original feature behavior and MIT attribution.
+
+## Isolation and safety
+
+- Work only in `Sitenovastudio/wacrm`, branch `sitenova/vanilla-js-migration`.
+- Keep upstream `ArnasDon/wacrm` unchanged.
+- Keep both existing managed Supabase projects untouched; do not connect to them or run migrations against them.
+- Do not commit credentials or real customer data.
+- The InsForge adapter and docs are legacy scaffolding, not the target architecture.
 
 ## Current status
-Architecture and local setup docs are in place. Frontend/API remain a scaffold. No WACRM business feature is marked migrated solely because a placeholder exists. InsForge is not yet running on the user's machine; no schema or user data has been imported.
+
+Blueprint and migration plan are documentation only. No AWS resources, IAM roles, Cognito pools, RDS databases, S3 buckets, queues, domains or deployments have been created. No customer data has been migrated. No production WhatsApp webhook has been activated. The current SPA/API remains a scaffold and is not feature complete.
+
+## Provisioning gate
+
+Any AWS provisioning, billable resource creation, account access, credential creation, DNS change, deployment or data cutover requires separate explicit approval after cost estimate, ownership confirmation, security review and a reviewed IaC plan.
