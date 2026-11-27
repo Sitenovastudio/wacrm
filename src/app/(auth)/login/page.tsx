@@ -51,6 +51,11 @@ function LoginPageInner() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL;
+  const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD;
+  const showDemoLogin =
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" &&
+    Boolean(demoEmail && demoPassword);
   const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -104,6 +109,25 @@ function LoginPageInner() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {showDemoLogin && (
+            <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <p className="mb-2 text-sm text-muted-foreground">
+                Demo environment — use a dedicated test account with sample data.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setEmail(demoEmail!);
+                  setPassword(demoPassword!);
+                  setError(null);
+                }}
+              >
+                Use demo testing credentials
+              </Button>
+            </div>
+          )}
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             {linkErrorMessage && !error && (
               <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
