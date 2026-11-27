@@ -1,32 +1,45 @@
 # SiteNova Connect
 
-Vanilla JavaScript SPA and Node.js API migration workspace for WACRM.
+Vanilla JavaScript SPA and Node.js backend migration workspace for the original WACRM application.
 
 ## Current status
 
-This is an additive migration scaffold on `sitenova/vanilla-js-migration`. The original Next.js application, source files, MCP server and original Supabase migrations remain in place as read-only migration references. This scaffold is not yet a feature-complete CRM.
+This is an additive migration workspace on `sitenova/vanilla-js-migration`. The original Next.js application, source files, MCP server and original Supabase SQL migrations remain in the repository as read-only migration references. The Vanilla JS frontend and Node API are still a scaffold; this is **not** a feature-complete CRM.
 
-See [AUDIT.md](./AUDIT.md), [PARITY_TRACKER.md](./docs/PARITY_TRACKER.md), and [INSFORGE_MIGRATION_MAPPING.md](./docs/INSFORGE_MIGRATION_MAPPING.md).
+## Approved target architecture
 
-## Architecture
+The approved target is an AWS-native production backend in `ap-south-1` (Mumbai):
+- Frontend: private Amazon S3 origin behind CloudFront and AWS WAF.
+- Identity: Amazon Cognito User Pools.
+- API/runtime: API Gateway HTTP API, VPC Link, internal ALB and Node.js services on ECS Fargate.
+- Database: Amazon RDS for PostgreSQL, Multi-AZ in production, with tenant-aware PostgreSQL RLS.
+- Files: private Amazon S3 buckets with short-lived presigned URLs.
+- Background processing: Amazon SQS + dead-letter queues, EventBridge Scheduler and Step Functions where appropriate.
+- Real-time: API Gateway WebSocket API.
+- Security/operations: IAM task roles, KMS, Secrets Manager, CloudWatch, CloudTrail, X-Ray and ECR.
 
-- `public/`: single-page HTML/CSS/Vanilla JavaScript frontend.
-- `server/`: Express API and InsForge adapter.
-- Backend: dedicated self-hosted InsForge instance, with its own PostgreSQL, Auth and Storage.
-- Jobs: separate worker process; durable queue and job handlers are still pending.
-- MCP: original package remains separate until migration is validated.
+See [AWS_ARCHITECTURE_BLUEPRINT.md](./docs/AWS_ARCHITECTURE_BLUEPRINT.md) and [AWS_MIGRATION_IMPLEMENTATION_PLAN.md](./docs/AWS_MIGRATION_IMPLEMENTATION_PLAN.md).
 
-The two existing managed Supabase projects are not used by this target architecture and must remain untouched.
+## Legacy scaffold notice
 
-## Local setup
+The current `server/insforge.js`, InsForge environment settings and InsForge-specific docs are historical prototype scaffolding from the earlier design. They are **not** the approved target and must be replaced/retired during AWS implementation. Do not deploy them as the final backend. The architecture documents are plans, not proof that AWS services or application features are implemented.
 
-1. Follow [INSFORGE_LOCAL_SETUP.md](./docs/INSFORGE_LOCAL_SETUP.md) to run InsForge in its own Docker Compose directory.
-2. Copy `.env.example` to `.env` and map InsForge's `ACCESS_ANON_KEY` to `INSFORGE_ANON_KEY`, and server-only `ACCESS_API_KEY` to `INSFORGE_API_KEY`.
-3. Run `npm install`, `npm run check`, then `npm run dev`.
-4. Open `http://localhost:3000`.
+## Local development
 
-Never expose the InsForge admin/API key, database password, root admin password, JWT secret, encryption key, Meta secrets or AI provider keys to browser code.
+The current SPA/API scaffold can be inspected locally using Node.js 20+:
+```bash
+cd sitenova-connect
+npm install
+npm run check
+npm run dev
+```
+This runs the current scaffold only; it does not connect to AWS or provision infrastructure. AWS adapters, Cognito flows, database migrations, SQS workers and feature APIs are not yet implemented.
 
-## Migration policy
+## Migration and data safety
 
-Do not delete the original implementation until every feature has passing parity tests. Do not run the original SQL migrations against either existing Supabase project. Port and test each migration against the isolated local InsForge instance first.
+- Upstream `ArnasDon/wacrm` remains unchanged; work only in this fork and migration branch.
+- Both existing managed Supabase projects are explicitly out of scope and must remain untouched.
+- Do not run original Supabase migrations against either existing Supabase project.
+- Review and port all 58 source SQL migrations individually for RDS; Supabase-specific auth, RLS, storage, realtime, RPC and edge-function assumptions require translation.
+- Do not import real customer data or activate production WhatsApp webhooks before security, tenant-isolation and parity gates pass.
+- Preserve the original MIT license and attribution.
