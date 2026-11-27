@@ -1,8 +1,8 @@
 # SiteNova Connect Feature Parity Tracker
 
-A feature is complete only when its frontend, backend, authorization, migration and automated acceptance tests pass. A placeholder screen or route does not count as migrated.
+A feature is complete only when its frontend, backend, authorization, data migration and automated acceptance tests pass. A placeholder screen or route does not count as migrated.
 
-| Domain | Source area | SPA | API/service | DB/RLS | Tests | Status |
+| Domain | Source area | SPA | API/service | InsForge schema/RLS | Tests | Status |
 |---|---|---|---|---|---|---|
 | Auth and invitations | src/app/(auth), src/app/auth, src/app/join | Pending | Pending | Pending | Pending | Not migrated |
 | Dashboard | src/app/(dashboard)/dashboard, components/dashboard | Scaffold only | Pending | Pending | Pending | Not migrated |
@@ -18,4 +18,16 @@ A feature is complete only when its frontend, backend, authorization, migration 
 | MCP | mcp-server | Original retained | Original retained | Pending | Pending | Not migrated |
 | Notifications/quick replies | api/quick-replies, dashboard/notifications | Pending | Pending | Pending | Pending | Not migrated |
 
-Original Next.js source and migrations must remain available until all rows have passed acceptance testing and production cutover has been approved.
+## Backend migration gate
+
+- [ ] Local InsForge stack starts and health checks pass.
+- [ ] SDK and InsForge image/release versions are pinned.
+- [ ] Auth sign-up, sign-in, verification, refresh, sign-out and recovery tests pass.
+- [ ] All 58 source migrations have an individual compatibility review.
+- [ ] Tenant/account isolation tests deny cross-account reads and writes.
+- [ ] Storage upload/download/delete authorization tests pass.
+- [ ] Realtime behavior and reconnect tests pass.
+- [ ] Durable job queue, retries, idempotency and dead-letter behavior pass.
+- [ ] Backup and restore are demonstrated on a disposable instance.
+
+Original Next.js source and migrations remain available until every feature passes acceptance testing and production cutover is explicitly approved.
